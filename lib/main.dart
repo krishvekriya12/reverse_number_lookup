@@ -1,17 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'core/di/service_locator.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
-void main(){
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock Orientation to Portrait
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Setup GetIt Dependency Injection
+  await setupServiceLocator();
+
+  runApp(const ReverseNumberLookupApp());
 }
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+
+class ReverseNumberLookupApp extends StatelessWidget {
+  const ReverseNumberLookupApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Reverse Number LookUp"),
-      ),
+    return MaterialApp.router(
+      title: 'Reverse Number Lookup',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      routerConfig: appRouter,
     );
   }
 }
