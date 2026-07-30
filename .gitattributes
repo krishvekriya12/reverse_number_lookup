@@ -1,7 +1,0 @@
-# Ignore build outputs from GitHub language stats
-build/** linguist-vendored
-android/build/** linguist-vendored
-*.html linguist-vendored
-*.xml linguist-vendored
-android/**/*.xml linguist-vendored
-ios/**/*.storyboard linguist-vendored

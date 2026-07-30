@@ -17,7 +17,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
-import com.example.reverse_number_lookup.R
+import com.reversenumberlookup.app.R
 import java.io.File
 
 class CallOverlayService : Service() {

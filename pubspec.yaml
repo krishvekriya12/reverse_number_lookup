@@ -82,6 +82,7 @@ dependencies:
   # ── Icons ─────────────────────────────────────
   cupertino_icons: ^1.0.9
   fpdart: ^1.2.0
+  phone_numbers_parser: ^9.0.24
 
 dev_dependencies:
   flutter_test:
@@ -96,4 +97,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/animations/
+    - assets/animations/ic_splash.json
+    - assets/animations/coin.json
+
