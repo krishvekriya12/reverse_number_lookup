@@ -42,6 +42,7 @@ dependencies:
 
   # ── Phone / Contacts ──────────────────────────
   flutter_contacts: ^1.1.8
+  call_log: ^6.0.1
   url_launcher: ^6.3.2
 
   # ── Country Picker ────────────────────────────

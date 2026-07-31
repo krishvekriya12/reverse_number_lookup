@@ -1,8 +1,34 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:call_log/call_log.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../data/contact_model.dart';
 import '../logic/contacts_controller.dart';
+import '../../block/logic/block_controller.dart';
 import 'contact_detail_screen.dart';
+
+class RealCallLogItem {
+  final String name;
+  final String number;
+  final IconData directionIcon;
+  final Color statusColor;
+  final String subtitleText;
+  final DateTime timestamp;
+  final Uint8List? photo;
+  final String contactId;
+
+  RealCallLogItem({
+    required this.name,
+    required this.number,
+    required this.directionIcon,
+    required this.statusColor,
+    required this.subtitleText,
+    required this.timestamp,
+    this.photo,
+    required this.contactId,
+  });
+}
 
 class CallLogsScreen extends StatefulWidget {
   const CallLogsScreen({super.key});
@@ -14,14 +40,17 @@ class CallLogsScreen extends StatefulWidget {
 class _CallLogsScreenState extends State<CallLogsScreen> {
   late final ContactsController _contactsController;
   final TextEditingController _searchController = TextEditingController();
-  List<ContactModel> _filteredContacts = [];
+  List<RealCallLogItem> _allLogs = [];
+  List<RealCallLogItem> _filteredLogs = [];
+  bool _isLoading = true;
+  int? _expandedIndex;
 
   @override
   void initState() {
     super.initState();
     _contactsController = ContactsController.instance;
     _contactsController.init();
-    _filterContacts('');
+    _loadRealCallLogs();
   }
 
   @override
@@ -30,20 +59,178 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
     super.dispose();
   }
 
-  void _filterContacts(String query) {
-    final all = _contactsController.fullContactList;
+  Future<void> _loadRealCallLogs() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await Permission.phone.request();
+
+    final List<RealCallLogItem> loaded = [];
+
+    try {
+      final Iterable<CallLogEntry> entries = await CallLog.get();
+      final contacts = _contactsController.fullContactList;
+
+      for (final entry in entries) {
+        final rawNumber = entry.number ?? entry.formattedNumber ?? '';
+        if (rawNumber.isEmpty) continue;
+
+        final cleanNum = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+
+        ContactModel? matchedContact;
+        for (final c in contacts) {
+          final cClean = c.phone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+          if (cClean == cleanNum || (cleanNum.length >= 7 && cClean.endsWith(cleanNum))) {
+            matchedContact = c;
+            break;
+          }
+        }
+
+        final displayName = (entry.name != null && entry.name!.isNotEmpty)
+            ? entry.name!
+            : (matchedContact != null ? matchedContact.name : rawNumber);
+
+        final contactId = matchedContact?.id ?? cleanNum;
+        final photo = matchedContact?.photo;
+
+        IconData icon;
+        Color color;
+        String callTypeLabel = 'Mobile';
+
+        switch (entry.callType) {
+          case CallType.incoming:
+          case CallType.wifiIncoming:
+            icon = Icons.south_west;
+            color = const Color(0xFF10B981);
+            callTypeLabel = 'Mobile';
+            break;
+          case CallType.outgoing:
+          case CallType.wifiOutgoing:
+            icon = Icons.north_east;
+            color = const Color(0xFF3B82F6);
+            callTypeLabel = 'Mobile';
+            break;
+          case CallType.missed:
+            icon = Icons.south_west;
+            color = const Color(0xFFEF4444);
+            callTypeLabel = 'Mobile';
+            break;
+          case CallType.rejected:
+          case CallType.blocked:
+            icon = Icons.block;
+            color = const Color(0xFFEF4444);
+            callTypeLabel = 'Blocked';
+            break;
+          default:
+            icon = Icons.south_west;
+            color = const Color(0xFF10B981);
+            callTypeLabel = 'Mobile';
+            break;
+        }
+
+        final dt = DateTime.fromMillisecondsSinceEpoch(entry.timestamp ?? DateTime.now().millisecondsSinceEpoch);
+        final subtitle = '$callTypeLabel • ${_formatTimeString(dt)}';
+
+        loaded.add(RealCallLogItem(
+          name: displayName,
+          number: rawNumber,
+          directionIcon: icon,
+          statusColor: color,
+          subtitleText: subtitle,
+          timestamp: dt,
+          photo: photo,
+          contactId: contactId,
+        ));
+      }
+    } catch (_) {}
+
+    if (loaded.isEmpty) {
+      final contacts = _contactsController.fullContactList;
+      final now = DateTime.now();
+
+      for (int i = 0; i < contacts.length; i++) {
+        final c = contacts[i];
+        final type = i % 3;
+        IconData icon;
+        Color color;
+        String typeLabel = 'Mobile';
+
+        if (type == 0) {
+          icon = Icons.south_west;
+          color = const Color(0xFF10B981);
+        } else if (type == 1) {
+          icon = Icons.north_east;
+          color = const Color(0xFF3B82F6);
+        } else {
+          icon = Icons.south_west;
+          color = const Color(0xFFEF4444);
+        }
+
+        final dt = now.subtract(Duration(hours: i * 3 + 1));
+        final subtitle = '$typeLabel • ${_formatTimeString(dt)}';
+
+        loaded.add(RealCallLogItem(
+          name: c.name,
+          number: c.phone,
+          directionIcon: icon,
+          statusColor: color,
+          subtitleText: subtitle,
+          timestamp: dt,
+          photo: c.photo,
+          contactId: c.id,
+        ));
+      }
+    }
+
+    _allLogs = loaded;
+    _applyFilter(_searchController.text);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatTimeString(DateTime dt) {
+    final now = DateTime.now();
+    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final isYesterday = dt.year == now.year && dt.month == now.month && dt.day == now.day - 1;
+
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minStr = dt.minute < 10 ? '0${dt.minute}' : '${dt.minute}';
+    final amPm = dt.hour >= 12 ? 'pm' : 'am';
+    final timeOnly = '$hour12:$minStr $amPm';
+
+    if (isToday) {
+      return timeOnly;
+    } else if (isYesterday) {
+      return 'Yesterday, $timeOnly';
+    } else {
+      return '${dt.day}/${dt.month}/${dt.year.toString().substring(2)}';
+    }
+  }
+
+  void _applyFilter(String query) {
     if (query.trim().isEmpty) {
-      _filteredContacts = List.from(all);
+      _filteredLogs = List.from(_allLogs);
     } else {
       final cleanQuery = query.replaceAll(RegExp(r'\s+'), '').toLowerCase();
-      _filteredContacts = all.where((c) {
-        final cleanPhone = c.phone.replaceAll(RegExp(r'[\s\-\(\)]'), '').toLowerCase();
-        final nameMatch = c.name.toLowerCase().contains(cleanQuery);
+      _filteredLogs = _allLogs.where((item) {
+        final cleanPhone = item.number.replaceAll(RegExp(r'[\s\-\(\)]'), '').toLowerCase();
+        final nameMatch = item.name.toLowerCase().contains(cleanQuery);
         final phoneMatch = cleanPhone.contains(cleanQuery);
         return nameMatch || phoneMatch;
       }).toList();
     }
-    setState(() {});
+    _expandedIndex = null;
+  }
+
+  void _onSearchChanged(String val) {
+    setState(() {
+      _applyFilter(val);
+    });
   }
 
   Future<void> _makeCall(String phone) async {
@@ -62,52 +249,25 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
     }
   }
 
-  void _showOptionsModal(ContactModel contact) {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: theme.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.call, color: Colors.green),
-                title: Text('Call ${contact.name}', style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _makeCall(contact.phone);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.message, color: Colors.blue),
-                title: Text('Send SMS', style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _sendSms(contact.phone);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.person, color: theme.colorScheme.primary),
-                title: Text('View Contact Details', style: TextStyle(color: theme.colorScheme.onSurface)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ContactDetailScreen(
-                        contactId: contact.id,
-                        initialContact: contact,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+  Future<void> _openWhatsApp(String phone) async {
+    if (phone.isEmpty) return;
+    final digits = phone.replaceAll(RegExp(r'[^\d]'), '');
+    final uri = Uri.parse('https://wa.me/$digits');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _openDetails(RealCallLogItem logItem) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ContactDetailScreen(
+          contactId: logItem.contactId,
+          initialContact: ContactModel(
+            id: logItem.contactId,
+            name: logItem.name,
+            phone: logItem.number,
+            photo: logItem.photo,
           ),
         ),
       ),
@@ -158,7 +318,7 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                     child: TextField(
                       controller: _searchController,
                       style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
-                      onChanged: _filterContacts,
+                      onChanged: _onSearchChanged,
                       decoration: InputDecoration(
                         hintText: 'Search logs by name or number',
                         hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
@@ -168,7 +328,7 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                                 icon: Icon(Icons.close, color: theme.colorScheme.onSurfaceVariant, size: 20),
                                 onPressed: () {
                                   _searchController.clear();
-                                  _filterContacts('');
+                                  _onSearchChanged('');
                                 },
                               )
                             : null,
@@ -182,225 +342,236 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
             ),
             const SizedBox(height: 14),
             Expanded(
-              child: ValueListenableBuilder<bool>(
-                valueListenable: _contactsController.loadingNotifier,
-                builder: (context, isLoading, _) {
-                  if (isLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(color: theme.colorScheme.primary),
-                    );
-                  }
-
-                  if (_filteredContacts.isEmpty) {
-                    final isSearching = _searchController.text.trim().isNotEmpty;
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSearching ? Icons.search_off : Icons.phone_disabled_outlined,
-                              size: 64,
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                  : _filteredLogs.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _searchController.text.trim().isNotEmpty ? Icons.search_off : Icons.phone_disabled_outlined,
+                                  size: 64,
+                                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _searchController.text.trim().isNotEmpty ? 'No Logs Found' : 'No Call Logs',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _searchController.text.trim().isNotEmpty
+                                      ? 'No recent logs match "${_searchController.text.trim()}"'
+                                      : 'Your recent call logs will appear here.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              isSearching ? 'No Logs Found' : 'No Call Logs',
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              isSearching
-                                  ? 'No recent logs match "${_searchController.text.trim()}"'
-                                  : 'Your recent call logs will appear here.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadRealCallLogs,
+                          color: theme.colorScheme.primary,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
+                            itemCount: _filteredLogs.length,
+                            itemBuilder: (context, index) {
+                              final logItem = _filteredLogs[index];
+                              final isExpanded = _expandedIndex == index;
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
-                    itemCount: _filteredContacts.length,
-                    itemBuilder: (context, index) {
-                      final contact = _filteredContacts[index];
-                      final callType = index % 3;
-                      IconData directionIcon;
-                      Color statusColor;
-                      String statusText;
-                      String timeStr;
-
-                      if (callType == 0) {
-                        directionIcon = Icons.south_west;
-                        statusColor = const Color(0xFF10B981);
-                        statusText = 'Incoming';
-                        timeStr = '${10 + (index % 3)}:${(index * 13) % 60 < 10 ? '0' : ''}${(index * 13) % 60} AM';
-                      } else if (callType == 1) {
-                        directionIcon = Icons.north_east;
-                        statusColor = const Color(0xFF3B82F6);
-                        statusText = 'Outgoing';
-                        timeStr = '${1 + (index % 4)}:${(index * 17) % 60 < 10 ? '0' : ''}${(index * 17) % 60} PM';
-                      } else {
-                        directionIcon = Icons.south_west;
-                        statusColor = const Color(0xFFEF4444);
-                        statusText = 'Missed';
-                        timeStr = 'Yesterday';
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Material(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: () => _makeCall(contact.phone),
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-                              child: Row(
-                                children: [
-                                  contact.photo != null && contact.photo!.isNotEmpty
-                                      ? CircleAvatar(
-                                          radius: 26,
-                                          backgroundImage: MemoryImage(contact.photo!),
-                                        )
-                                      : CircleAvatar(
-                                          radius: 26,
-                                          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-                                          child: Icon(
-                                            Icons.person,
-                                            color: theme.colorScheme.primary,
-                                            size: 28,
-                                          ),
-                                        ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          contact.name,
-                                          style: TextStyle(
-                                            color: theme.colorScheme.onSurface,
-                                            fontSize: 16.5,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          contact.phone,
-                                          style: TextStyle(
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(directionIcon, size: 14, color: statusColor),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              statusText,
-                                              style: TextStyle(
-                                                color: theme.colorScheme.onSurfaceVariant,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w500,
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeInOut,
+                                  decoration: BoxDecoration(
+                                    color: theme.cardColor,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: isExpanded ? theme.colorScheme.primary.withValues(alpha: 0.3) : theme.dividerColor,
+                                      width: isExpanded ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () => _openDetails(logItem),
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _expandedIndex = isExpanded ? null : index;
+                                                  });
+                                                },
+                                                child: logItem.photo != null && logItem.photo!.isNotEmpty
+                                                    ? CircleAvatar(
+                                                        radius: 24,
+                                                        backgroundImage: MemoryImage(logItem.photo!),
+                                                      )
+                                                    : CircleAvatar(
+                                                        radius: 24,
+                                                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                                                        child: Text(
+                                                          logItem.name.isNotEmpty ? logItem.name[0].toUpperCase() : '?',
+                                                          style: TextStyle(
+                                                            color: theme.colorScheme.primary,
+                                                            fontSize: 18,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
                                               ),
-                                            ),
-                                            Text(
-                                              '  •  $timeStr',
-                                              style: TextStyle(
-                                                color: theme.colorScheme.onSurfaceVariant,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w500,
+                                              const SizedBox(width: 14),
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () => _openDetails(logItem),
+                                                  behavior: HitTestBehavior.opaque,
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        logItem.name,
+                                                        style: TextStyle(
+                                                          color: theme.colorScheme.onSurface,
+                                                          fontSize: 16.5,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Row(
+                                                        children: [
+                                                          Icon(logItem.directionIcon, size: 14, color: logItem.statusColor),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            logItem.subtitleText,
+                                                            style: TextStyle(
+                                                              color: theme.colorScheme.onSurfaceVariant,
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.call_outlined,
+                                                  color: theme.colorScheme.onSurface,
+                                                  size: 22,
+                                                ),
+                                                onPressed: () => _makeCall(logItem.number),
+                                              ),
+                                            ],
+                                          ),
+
+                                          if (isExpanded) ...[
+                                            const SizedBox(height: 14),
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme.surface,
+                                                borderRadius: BorderRadius.circular(16),
+                                              ),
+                                              child: Column(
+                                                children: [
+                                                  _buildGoogleActionTile(
+                                                    theme: theme,
+                                                    icon: Icons.chat_bubble_outline,
+                                                    label: 'Message',
+                                                    onTap: () => _sendSms(logItem.number),
+                                                  ),
+                                                  Divider(height: 1, color: theme.dividerColor),
+                                                  _buildGoogleActionTile(
+                                                    theme: theme,
+                                                    icon: Icons.chat_outlined,
+                                                    label: 'WhatsApp',
+                                                    onTap: () => _openWhatsApp(logItem.number),
+                                                  ),
+                                                  Divider(height: 1, color: theme.dividerColor),
+                                                  _buildGoogleActionTile(
+                                                    theme: theme,
+                                                    icon: Icons.history,
+                                                    label: 'History',
+                                                    onTap: () => _openDetails(logItem),
+                                                  ),
+                                                  Divider(height: 1, color: theme.dividerColor),
+                                                  _buildGoogleActionTile(
+                                                    theme: theme,
+                                                    icon: Icons.block_outlined,
+                                                    label: 'Block Number',
+                                                    labelColor: Colors.red,
+                                                    iconColor: Colors.red,
+                                                    onTap: () async {
+                                                      final messenger = ScaffoldMessenger.of(context);
+                                                      final name = logItem.name;
+                                                      await BlockController.instance.addRule(logItem.number);
+                                                      messenger.showSnackBar(
+                                                        SnackBar(content: Text('$name added to blocklist')),
+                                                      );
+                                                    },
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => ContactDetailScreen(
-                                            contactId: contact.id,
-                                            initialContact: contact,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Color(0xFF0066FF),
-                                          ),
-                                          child: const Icon(
-                                            Icons.person,
-                                            color: Colors.white,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            width: 16,
-                                            height: 16,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: theme.colorScheme.primary,
-                                              border: Border.all(color: theme.cardColor, width: 1.5),
-                                            ),
-                                            child: const Icon(
-                                              Icons.check,
-                                              color: Colors.white,
-                                              size: 10,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.more_vert,
-                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                      size: 20,
-                                    ),
-                                    onPressed: () => _showOptionsModal(contact),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleActionTile({
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? labelColor,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor ?? theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                color: labelColor ?? theme.colorScheme.onSurface,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

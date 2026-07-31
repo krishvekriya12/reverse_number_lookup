@@ -84,10 +84,10 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
         barrierDismissible: false,
         builder: (_) => Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             decoration: BoxDecoration(
               color: theme.cardColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -95,7 +95,7 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                 CircularProgressIndicator(color: theme.colorScheme.primary),
                 const SizedBox(height: 16),
                 Text(
-                  'Searching...',
+                  'Searching Directory...',
                   style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -137,12 +137,12 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
           backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'DASHBOARD',
+                    'REVERSE NUMBER LOOKUP',
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontSize: 12,
@@ -150,13 +150,21 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                       letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    'Reverse Number Lookup',
+                    'Search Directory',
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Identify unknown callers, phone numbers and spam scores in real-time.',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 13.5,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -165,17 +173,17 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                       _callerIdController.state != CallerIdState.healthy)
                     _buildCallerIdCard(),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   if (_controller.isInitialized && _controller.coinBalance == 0)
                     _buildNoCoinCard()
                   else
                     _buildSearchCard(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   _buildRecentActivityHeader(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
                   if (!_controller.isInitialized)
                     const SizedBox(height: 100)
@@ -193,12 +201,10 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
   }
 
   Widget _buildCallerIdCard() {
-    final theme = Theme.of(context);
     final isSetupRequired =
         _callerIdController.state == CallerIdState.setupRequired;
 
-    final title =
-        isSetupRequired ? 'Activate Caller ID' : 'Enable Caller ID';
+    final title = isSetupRequired ? 'Activate Caller ID' : 'Enable Caller ID';
     final desc = isSetupRequired
         ? 'Enable Caller ID pop-up overlay to identify spam & unknown callers in real-time.'
         : 'Caller ID is configured. Tap to enable it now.';
@@ -206,14 +212,21 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primaryDark, theme.colorScheme.primary],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0052FF), Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0052FF).withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,12 +234,12 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
           Row(
             children: [
               const Icon(Icons.shield_outlined, color: Colors.white, size: 24),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -235,9 +248,9 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
           const SizedBox(height: 6),
           Text(
             desc,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.35),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           ElevatedButton(
             onPressed: () async {
               if (isSetupRequired) {
@@ -255,15 +268,15 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: theme.colorScheme.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              foregroundColor: const Color(0xFF0052FF),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
             ),
-            child: Text(btnText,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 13)),
+            child: Text(
+              btnText,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
+            ),
           ),
         ],
       ),
@@ -277,43 +290,37 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
           Lottie.asset(
             AppAssets.coinAnimation,
-            width: 60,
-            height: 60,
-            errorBuilder: (_, __, ___) =>
-                const Icon(Icons.monetization_on, color: Colors.amber, size: 60),
+            width: 64,
+            height: 64,
+            errorBuilder: (_, __, ___) => const Icon(Icons.monetization_on, color: Colors.amber, size: 64),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             'Out of Coins!',
-            style: TextStyle(
-                color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             'Watch a short ad to earn 5 free lookup coins.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13.5),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () => _controller.rewardUserWithCoins(),
-            icon: const Icon(Icons.play_circle_fill),
-            label: const Text('WATCH AD (+5 COINS)',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.play_circle_fill, color: Colors.white),
+            label: const Text('WATCH AD (+5 COINS)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -326,10 +333,13 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
     final hasError = _controller.errorMessage != null;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.dividerColor,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,18 +350,17 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
               Text(
                 'ENTER PHONE NUMBER',
                 style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(99),
                 ),
                 child: Row(
                   children: [
@@ -359,25 +368,23 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                       AppAssets.coinAnimation,
                       width: 22,
                       height: 22,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.monetization_on,
-                          color: Colors.amber,
-                          size: 20),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${_controller.coinBalance}',
+                      '${_controller.coinBalance} Coins',
                       style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 14),
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -388,7 +395,7 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                     showPhoneCode: true,
                     onSelect: (Country country) {
                       _controller.updateCountry(
-                          country.phoneCode, country.countryCode, country.name);
+                        country.phoneCode, country.countryCode, country.name);
                     },
                   );
                 },
@@ -397,7 +404,7 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
@@ -406,13 +413,13 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                       Text(
                         '+${_controller.selectedCountryCode}',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                            fontSize: 15),
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(width: 2),
-                      Icon(Icons.arrow_drop_down,
-                          color: theme.colorScheme.onSurfaceVariant, size: 20),
+                      Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant, size: 20),
                     ],
                   ),
                 ),
@@ -427,70 +434,70 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
                     style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                     onChanged: (_) => _controller.clearError(),
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) =>
-                        _controller.searchNumber(_inputController.text),
+                    onSubmitted: (_) => _controller.searchNumber(_inputController.text),
                     decoration: InputDecoration(
-                      hintText: 'Phone number',
+                      hintText: 'Enter phone number',
                       hintStyle: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6), fontSize: 14),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
                       filled: true,
                       fillColor: theme.colorScheme.surface,
+                      suffixIcon: _inputController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.close, color: theme.colorScheme.onSurfaceVariant, size: 18),
+                              onPressed: () {
+                                _inputController.clear();
+                                setState(() {});
+                              },
+                            )
+                          : null,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(color: theme.dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                            color: theme.colorScheme.primary, width: 1.5),
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 15),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              height: 18,
-              child: Visibility(
-                visible: hasError,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: Text(
-                  _controller.errorMessage ?? ' ',
-                  style: const TextStyle(color: AppColors.error, fontSize: 12),
-                ),
-              ),
+          if (hasError) ...[
+            const SizedBox(height: 6),
+            Text(
+              _controller.errorMessage ?? '',
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
-          ),
-          const SizedBox(height: 6),
+          ],
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 52,
             child: ElevatedButton.icon(
-              onPressed: () =>
-                  _controller.searchNumber(_inputController.text),
-              icon: const Icon(Icons.search, size: 20),
-              label: const Text('SEARCH NUMBER',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      letterSpacing: 0.5)),
+              onPressed: () => _controller.searchNumber(_inputController.text),
+              icon: const Icon(Icons.search, color: Colors.white, size: 22),
+              label: const Text(
+                'SEARCH NUMBER',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 2,
               ),
             ),
           ),
@@ -505,11 +512,12 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Recent Activity',
+          'Recent Searches',
           style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface),
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         TextButton(
           onPressed: () {
@@ -520,12 +528,13 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
             );
           },
           child: Text(
-            'VIEW HISTORY',
+            'VIEW ALL',
             style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.8),
+              color: theme.colorScheme.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
           ),
         ),
       ],
@@ -536,27 +545,31 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         children: [
-          Icon(Icons.history,
-              size: 40, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
-          const SizedBox(height: 10),
+          Icon(
+            Icons.history,
+            size: 48,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
           Text(
-            'No Recent Activity Yet',
+            'No Recent Searches',
             style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w600),
+              color: theme.colorScheme.onSurface,
+              fontSize: 16.5,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Searched numbers will appear here',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+            'Numbers searched by you will be listed here.',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13.5),
           ),
         ],
       ),
@@ -574,43 +587,52 @@ class _LookupScreenState extends State<LookupScreen> with WidgetsBindingObserver
         final initials = (item.name?.isNotEmpty == true)
             ? item.name![0].toUpperCase()
             : '?';
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          color: theme.cardColor,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          clipBehavior: Clip.antiAlias,
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            leading: CircleAvatar(
-              radius: 22,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-              child: Text(initials,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              leading: CircleAvatar(
+                radius: 22,
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                child: Text(
+                  initials,
                   style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16)),
-            ),
-            title: Text(
-              item.name ?? 'Unknown Caller',
-              style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              title: Text(
+                item.name ?? 'Unknown Caller',
+                style: TextStyle(
                   color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                item.phoneNumber,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 13.5,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                size: 22,
+              ),
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => LookupResultScreen(result: item),
+                ));
+              },
             ),
-            subtitle: Text(
-              item.phoneNumber,
-              style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
-            ),
-            trailing: Icon(Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6), size: 20),
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => LookupResultScreen(result: item),
-              ));
-            },
           ),
         );
       },
