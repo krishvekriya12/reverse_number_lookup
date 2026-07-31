@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "165975715562",
+    "project_id": "reverse-number-lookup-5bc84",
+    "storage_bucket": "reverse-number-lookup-5bc84.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165975715562:android:a4cf39bb8c1bd72185b193",
+        "android_client_info": {
+          "package_name": "com.reversenumberlookup.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMdyfZygpNR40vV47JFs6L3xqg_D8xgbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      },
+      "admob_app_id": "ca-app-pub-9290709518778445~1970172654"
+    }
+  ],
+  "configuration_version": "1"
+}

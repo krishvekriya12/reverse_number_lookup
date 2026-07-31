@@ -82,17 +82,25 @@ class _ContactsScreenState extends State<ContactsScreen> with WidgetsBindingObse
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'contacts_fab_dialer',
-        backgroundColor: theme.colorScheme.primary,
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const DialerScreen(),
-            ),
-          );
-        },
-        child: const Icon(Icons.dialpad, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 12, right: 0),
+        child: FloatingActionButton(
+          heroTag: 'contacts_dialer_fab',
+          backgroundColor: theme.colorScheme.primary,
+          elevation: 6,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const DialerScreen(),
+              ),
+            );
+          },
+          child: const Icon(
+            Icons.dialpad,
+            color: Colors.white,
+            size: 26,
+          ),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -280,7 +288,7 @@ class _ContactsScreenState extends State<ContactsScreen> with WidgetsBindingObse
                           final uiStateList = _controller.toUiStateList(contacts);
 
                           return ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
                             itemCount: uiStateList.length,
                             itemBuilder: (context, index) {
                               final item = uiStateList[index];

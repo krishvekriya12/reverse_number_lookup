@@ -6,12 +6,15 @@ class InterstitialAdManager {
   static final InterstitialAdManager instance = InterstitialAdManager._internal();
   InterstitialAdManager._internal();
 
+  static bool adsEnabled = false;
+
   InterstitialAd? _interstitialAd;
   bool _isLoading = false;
 
   final String _adUnitId = 'ca-app-pub-3940256099942544/1033173712';
 
   void preloadAd() {
+    if (!adsEnabled) return;
     if (_isLoading || _interstitialAd != null) return;
     _isLoading = true;
 
@@ -34,8 +37,7 @@ class InterstitialAdManager {
   }
 
   Future<void> showWithoutDialog({required VoidCallback onFinished}) async {
-    if (_interstitialAd == null) {
-      debugPrint('Ad not ready yet, proceeding next.');
+    if (!adsEnabled || _interstitialAd == null) {
       onFinished();
       return;
     }

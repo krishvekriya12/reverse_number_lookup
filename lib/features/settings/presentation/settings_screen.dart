@@ -126,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
           child: ListenableBuilder(
             listenable: Listenable.merge([_callerIdController, ThemeController.instance]),
             builder: (context, _) {

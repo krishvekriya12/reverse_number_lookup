@@ -24,8 +24,10 @@ class SplashController extends ValueNotifier<SplashState> {
     try {
       await ConsentService.instance.gatherConsent((error) async {
         try {
-          await MobileAds.instance.initialize();
-          InterstitialAdManager.instance.preloadAd();
+          if (InterstitialAdManager.adsEnabled) {
+            await MobileAds.instance.initialize();
+            InterstitialAdManager.instance.preloadAd();
+          }
         } catch (_) {}
         await _executeSplashFlow(onNavigateNext);
       });
@@ -37,7 +39,7 @@ class SplashController extends ValueNotifier<SplashState> {
   Future<void> _executeSplashFlow(VoidCallback onNavigateNext) async {
     if (_hasNavigated) return;
 
-    if (!splashInterstitialShow) {
+    if (!splashInterstitialShow || !InterstitialAdManager.adsEnabled) {
       await Future.delayed(const Duration(milliseconds: 1000));
       _navigateOnce(onNavigateNext);
       return;
