@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import '../../lookup/logic/caller_id_controller.dart';
 import '../logic/block_controller.dart';
 import 'block_list_screen.dart';
@@ -74,6 +75,17 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Future<void> _pickContactForBlock() async {
+    try {
+      final contact = await FlutterContacts.openExternalPick();
+      if (contact != null && contact.phones.isNotEmpty) {
+        setState(() {
+          _numberInputController.text = contact.phones.first.number;
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _onAddBlockRule() async {
     String input = '';
     if (_selectedOptionIndex == 0) {
@@ -87,13 +99,14 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
     } else if (_selectedOptionIndex == 4) {
       input = _selectedSpamCategory;
     } else if (_selectedOptionIndex == 5) {
-      input = 'Hidden/Unknown';
+      input = 'Hidden/Unknown Numbers';
     }
 
     if (input.isEmpty && _selectedOptionIndex < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter valid block details'),
+          content: Text('Please enter a number, prefix, or name to block'),
+          backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
       );
@@ -103,15 +116,37 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
     _controller.setChipIndex(_selectedOptionIndex);
     final success = await _controller.addRule(input);
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
       _numberInputController.clear();
       _prefixInputController.clear();
       _nameInputController.clear();
       FocusScope.of(context).unfocus();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Added to Blocklist successfully'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text('"$input" added to Blocklist successfully'),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'VIEW RULES',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BlockListScreen(controller: _controller)),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      final msg = _controller.errorMessage ?? 'Failed to add block rule';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -123,11 +158,18 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: theme.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Icon(Icons.help_outline, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.help_outline, color: theme.colorScheme.primary, size: 22),
+            ),
+            const SizedBox(width: 10),
             Text(
               'How Blocking Works',
               style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
@@ -135,17 +177,18 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
           ],
         ),
         content: Text(
-          'Select your blocking method. Any call matching full numbers, series prefixes, spam categories, or hidden caller IDs will be automatically intercepted and rejected.',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14, height: 1.4),
+          'Select your blocking method below. Any incoming call or SMS matching full numbers, series prefixes, spam categories, or hidden caller IDs will be automatically intercepted and rejected.',
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14, height: 1.45),
         ),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it', style: TextStyle(color: Colors.white)),
+            child: const Text('Got it', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -163,34 +206,51 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
           backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Add to Blocklist',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CALL PROTECTION',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add to Blocklist',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                       InkWell(
                         onTap: _showHowItWorksDialog,
                         borderRadius: BorderRadius.circular(99),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.help_outline, size: 15, color: theme.colorScheme.primary),
-                              const SizedBox(width: 4),
+                              Icon(Icons.help_outline, size: 16, color: theme.colorScheme.primary),
+                              const SizedBox(width: 5),
                               Text(
                                 'How it works',
                                 style: TextStyle(
@@ -205,23 +265,40 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Choose how you want to block',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+
+                  const SizedBox(height: 20),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: theme.dividerColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Choose Blocking Method',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Select an option below to block unwanted calls and messages.',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Select an option below to block unwanted calls and messages.',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 13.5,
-                    ),
-                  ),
+
                   const SizedBox(height: 16),
 
                   _buildOptionCard0(theme),
@@ -236,25 +313,33 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 12),
                   _buildOptionCard5(theme),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
 
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.shield_outlined, color: theme.colorScheme.primary, size: 22),
-                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.shield_outlined, color: theme.colorScheme.primary, size: 20),
+                        ),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Tip',
+                                'Pro Protection Tip',
                                 style: TextStyle(
                                   color: theme.colorScheme.primary,
                                   fontSize: 14,
@@ -263,11 +348,11 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Calls from blocked numbers will be automatically rejected. You can manage your blocked list anytime from Block section.',
+                                'Calls from blocked numbers will be automatically rejected. You can manage active rules and view blocked call history anytime below.',
                                 style: TextStyle(
                                   color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 13,
-                                  height: 1.4,
+                                  fontSize: 12.5,
+                                  height: 1.45,
                                 ),
                               ),
                             ],
@@ -277,22 +362,23 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
 
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 54,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 4,
+                        shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
                       ),
                       onPressed: _onAddBlockRule,
-                      icon: const Icon(Icons.add_moderator, color: Colors.white, size: 20),
+                      icon: const Icon(Icons.add_moderator, color: Colors.white, size: 22),
                       label: const Text(
                         'Add to Blocklist',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -300,30 +386,44 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 20),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => BlockListScreen(controller: _controller)),
-                          );
-                        },
-                        icon: Icon(Icons.list_alt, color: theme.colorScheme.primary, size: 18),
-                        label: Text(
-                          'Active Rules (${_controller.rules.length})',
-                          style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => BlockListScreen(controller: _controller)),
+                            );
+                          },
+                          icon: Icon(Icons.list_alt, color: theme.colorScheme.primary, size: 18),
+                          label: Text(
+                            'Active Rules (${_controller.rules.length})',
+                            style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ),
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => BlockedCallsScreen(controller: _controller)),
-                          );
-                        },
-                        icon: Icon(Icons.history, color: theme.colorScheme.primary, size: 18),
-                        label: Text(
-                          'Blocked History',
-                          style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => BlockedCallsScreen(controller: _controller)),
+                            );
+                          },
+                          icon: Icon(Icons.history, color: theme.colorScheme.primary, size: 18),
+                          label: Text(
+                            'Blocked History',
+                            style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ),
                     ],
@@ -344,8 +444,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 0,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFE0EEFF),
@@ -353,25 +453,25 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
         child: const Icon(Icons.phone_outlined, color: Color(0xFF0066FF), size: 22),
       ),
       title: 'Block Full Number',
-      subtitle: 'Block any specific number.',
+      subtitle: 'Block any specific phone number.',
       child: isSelected
           ? Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 14),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
-                      height: 46,
+                      height: 48,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: theme.dividerColor),
                       ),
                       child: TextField(
                         controller: _numberInputController,
                         keyboardType: TextInputType.phone,
-                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14.5),
+                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: '+91 98765 43210',
                           hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
@@ -382,16 +482,16 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: IconButton(
                       icon: Icon(Icons.person_add_alt_1_outlined, color: theme.colorScheme.primary, size: 20),
-                      onPressed: () {},
+                      onPressed: _pickContactForBlock,
                     ),
                   ),
                 ],
@@ -408,8 +508,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 1,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFE6F7ED),
@@ -425,22 +525,22 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       subtitle: 'Block numbers starting with certain digits.',
       child: isSelected
           ? Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    height: 46,
+                    height: 48,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: TextField(
                       controller: _prefixInputController,
                       keyboardType: TextInputType.number,
-                      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14.5),
+                      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                       decoration: InputDecoration(
                         hintText: 'Enter prefix (e.g. 9876, 140)',
                         hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
@@ -467,8 +567,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 2,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFFFF3E0),
@@ -479,18 +579,18 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       subtitle: 'Block calls from numbers saved with a specific name.',
       child: isSelected
           ? Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 14),
               child: Container(
-                height: 46,
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: theme.dividerColor),
                 ),
                 child: TextField(
                   controller: _nameInputController,
-                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14.5),
+                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                   decoration: InputDecoration(
                     hintText: 'Enter name (e.g. Telemarketer, Insurance)',
                     hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
@@ -510,8 +610,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 3,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFF3E8FF),
@@ -522,13 +622,13 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       subtitle: 'Block calls from unwanted countries.',
       child: isSelected
           ? Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 14),
               child: Container(
-                height: 46,
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: theme.dividerColor),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -558,8 +658,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 4,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFFEE2E2),
@@ -570,13 +670,13 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       subtitle: 'Block numbers identified as spam or scam.',
       child: isSelected
           ? Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 14),
               child: Container(
-                height: 46,
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: theme.dividerColor),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -606,8 +706,8 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
       index: 5,
       isSelected: isSelected,
       iconBadge: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Color(0xFFE0F2FE),
@@ -644,73 +744,87 @@ class _BlockScreenState extends State<BlockScreen> with WidgetsBindingObserver {
     Widget? trailingWidget,
     Widget? child,
   }) {
-    return Material(
-      color: theme.cardColor,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedOptionIndex = index;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  iconBadge,
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+          width: isSelected ? 1.5 : 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedOptionIndex = index;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    iconBadge,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: 12.5,
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 12.5,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  trailingWidget ??
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-                          border: Border.all(
-                            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                            width: isSelected ? 6.5 : 1.5,
-                          ),
-                        ),
+                        ],
                       ),
-                ],
-              ),
-              if (child != null) child,
-            ],
+                    ),
+                    const SizedBox(width: 8),
+                    trailingWidget ??
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                            border: Border.all(
+                              color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                              width: isSelected ? 6.5 : 1.5,
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+                if (child != null) child,
+              ],
+            ),
           ),
         ),
       ),

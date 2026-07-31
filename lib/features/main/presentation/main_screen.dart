@@ -91,29 +91,33 @@ class _MainScreenState extends State<MainScreen> {
             child: Builder(
               builder: (animatedContext) {
                 final theme = Theme.of(animatedContext);
+                final isKeyboardOpen = MediaQuery.of(animatedContext).viewInsets.bottom > 0;
+
                 return Scaffold(
+                  resizeToAvoidBottomInset: false,
                   extendBody: true,
                   backgroundColor: theme.scaffoldBackgroundColor,
                   body: Stack(
                     children: [
                       Positioned.fill(
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 108),
+                          padding: EdgeInsets.only(bottom: isKeyboardOpen ? 0 : 108),
                           child: IndexedStack(
                             index: _currentIndex,
                             children: _screens,
                           ),
                         ),
                       ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          color: Colors.transparent,
-                          child: _buildFloatingBottomBar(theme),
+                      if (!isKeyboardOpen)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            color: Colors.transparent,
+                            child: _buildFloatingBottomBar(theme),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 );
@@ -135,14 +139,14 @@ class _MainScreenState extends State<MainScreen> {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(36),
         border: Border.all(
-          color: (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+          color: (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -151,15 +155,15 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           _buildNavItem(
             index: 0,
-            icon: Icons.phone_in_talk_outlined,
-            activeIcon: Icons.phone_in_talk,
+            icon: Icons.history_toggle_off_rounded,
+            activeIcon: Icons.history_rounded,
             label: 'Logs',
             theme: theme,
           ),
           _buildNavItem(
             index: 1,
-            icon: Icons.person_outline,
-            activeIcon: Icons.person,
+            icon: Icons.contacts_outlined,
+            activeIcon: Icons.contacts_rounded,
             label: 'Contacts',
             theme: theme,
           ),
@@ -167,14 +171,14 @@ class _MainScreenState extends State<MainScreen> {
           _buildNavItem(
             index: 3,
             icon: Icons.shield_outlined,
-            activeIcon: Icons.shield,
+            activeIcon: Icons.shield_rounded,
             label: 'Block',
             theme: theme,
           ),
           _buildNavItem(
             index: 4,
-            icon: Icons.settings_outlined,
-            activeIcon: Icons.settings,
+            icon: Icons.tune_rounded,
+            activeIcon: Icons.settings_rounded,
             label: 'Settings',
             theme: theme,
           ),
@@ -201,7 +205,8 @@ class _MainScreenState extends State<MainScreen> {
       },
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.fastOutSlowIn,
         width: 62,
         height: 76,
         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -209,29 +214,39 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutBack,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.12) : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
+                color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.14) : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                color: color,
-                size: 22,
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                scale: isSelected ? 1.12 : 1.0,
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  color: color,
+                  size: 22,
+                ),
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.fastOutSlowIn,
               style: TextStyle(
                 color: color,
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                letterSpacing: isSelected ? 0.2 : 0,
+                letterSpacing: isSelected ? 0.3 : 0,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -240,6 +255,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildCenterLookupItem(ThemeData theme) {
+    final isSelected = _currentIndex == 2;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -254,45 +271,51 @@ class _MainScreenState extends State<MainScreen> {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              top: -18,
-              child: Container(
-                width: 62,
-                height: 62,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: ThemeController.instance.isDark ? 0.2 : 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
+              top: -20,
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                scale: isSelected ? 1.08 : 1.0,
                 child: Container(
+                  width: 64,
+                  height: 64,
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.colorScheme.primary,
+                    color: theme.cardColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: isSelected ? 0.4 : 0.2),
+                        blurRadius: isSelected ? 14 : 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.search,
-                    color: Colors.white,
-                    size: 26,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary,
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                 ),
               ),
             ),
             Positioned(
               bottom: 6,
-              child: Text(
-                'Lookup',
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 250),
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.3,
                 ),
+                child: const Text('Lookup'),
               ),
             ),
           ],

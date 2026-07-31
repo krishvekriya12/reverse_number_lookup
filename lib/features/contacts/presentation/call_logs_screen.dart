@@ -60,9 +60,11 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
   }
 
   Future<void> _loadRealCallLogs() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (_allLogs.isEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     await Permission.phone.request();
 
@@ -380,10 +382,7 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                             ),
                           ),
                         )
-                      : RefreshIndicator(
-                          onRefresh: _loadRealCallLogs,
-                          color: theme.colorScheme.primary,
-                          child: ListView.builder(
+                      : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
                             itemCount: _filteredLogs.length,
                             itemBuilder: (context, index) {
@@ -541,7 +540,6 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                               );
                             },
                           ),
-                        ),
             ),
           ],
         ),

@@ -92,12 +92,12 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
     } catch (_) {}
   }
 
-  void _copyToClipboard(String text) {
+  void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Phone number copied to clipboard'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -141,8 +141,9 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         width: double.infinity,
@@ -151,30 +152,39 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                           color: theme.cardColor,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(color: theme.dividerColor),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                _contact!.photo != null && _contact!.photo!.isNotEmpty
-                                    ? CircleAvatar(
-                                        radius: 52,
-                                        backgroundImage: MemoryImage(_contact!.photo!),
-                                      )
-                                    : CircleAvatar(
-                                        radius: 52,
-                                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-                                        child: Text(
-                                          _contact!.name.isNotEmpty ? _contact!.name[0].toUpperCase() : '?',
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 40,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3), width: 2),
+                              ),
+                              child: _contact!.photo != null && _contact!.photo!.isNotEmpty
+                                  ? CircleAvatar(
+                                      radius: 54,
+                                      backgroundImage: MemoryImage(_contact!.photo!),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 54,
+                                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                      child: Text(
+                                        _contact!.name.isNotEmpty ? _contact!.name[0].toUpperCase() : '?',
+                                        style: TextStyle(
+                                          color: theme.colorScheme.primary,
+                                          fontSize: 42,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                              ],
+                                    ),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -195,23 +205,24 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(99),
+                                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.18)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.verified, size: 14, color: Color(0xFF10B981)),
-                                  SizedBox(width: 4),
+                                children: [
+                                  Icon(Icons.contacts, size: 14, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    'Verified Caller Profile',
+                                    'Saved Phone Contact',
                                     style: TextStyle(
-                                      color: Color(0xFF10B981),
-                                      fontSize: 12,
+                                      color: theme.colorScheme.primary,
+                                      fontSize: 12.5,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -248,126 +259,146 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                             color: const Color(0xFF14B8A6),
                             onTap: () => _openWhatsApp(_contact!.phone),
                           ),
-                          _buildQuickActionBtn(
-                            theme: theme,
-                            icon: Icons.edit,
-                            label: 'Edit',
-                            color: theme.colorScheme.primary,
-                            onTap: _editContact,
-                          ),
                         ],
                       ),
 
                       const SizedBox(height: 24),
 
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: theme.dividerColor),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Icon(Icons.phone_outlined, color: theme.colorScheme.primary, size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _contact!.phone,
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurface,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Mobile Number',
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.copy_outlined, color: theme.colorScheme.primary, size: 20),
-                              onPressed: () => _copyToClipboard(_contact!.phone),
-                            ),
-                          ],
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'CONTACT INFORMATION',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.1,
+                          ),
                         ),
                       ),
-
-                      const SizedBox(height: 12),
-
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: theme.dividerColor),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Spam Score: Safe (0%)',
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurface,
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'No spam reports filed for this contact',
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
 
                       Material(
                         color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(20),
                         clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: theme.dividerColor),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.phone_outlined, color: theme.colorScheme.primary, size: 20),
+                              ),
+                              title: Text(
+                                _contact!.phone,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Mobile  •  Default Number',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(Icons.copy_outlined, color: theme.colorScheme.primary, size: 19),
+                                onPressed: () => _copyToClipboard(_contact!.phone, 'Phone number'),
+                              ),
+                            ),
+                            Divider(height: 1, color: theme.dividerColor),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.cell_tower, color: Color(0xFF10B981), size: 20),
+                              ),
+                              title: Text(
+                                'Network & Location',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'GSM Mobile Network  •  Active Line',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                            Divider(height: 1, color: theme.dividerColor),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFA855F7).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.sim_card_outlined, color: Color(0xFFA855F7), size: 20),
+                              ),
+                              title: Text(
+                                'Storage Source',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Device Phonebook Storage',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(
+                          'ACTIONS & OPTIONS',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ),
+
+                      Material(
+                        color: theme.cardColor,
+                        clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: theme.dividerColor),
+                        ),
                         child: Column(
                           children: [
                             ListTile(
                               leading: Icon(Icons.share_outlined, color: theme.colorScheme.primary, size: 22),
                               title: Text(
-                                'Share Contact',
+                                'Share Contact Info',
                                 style: TextStyle(
                                   color: theme.colorScheme.onSurface,
                                   fontSize: 15,
@@ -376,8 +407,22 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                               ),
                               trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant, size: 20),
                               onTap: () {
-                                _copyToClipboard('${_contact!.name}: ${_contact!.phone}');
+                                _copyToClipboard('${_contact!.name}: ${_contact!.phone}', 'Contact details');
                               },
+                            ),
+                            Divider(height: 1, color: theme.dividerColor),
+                            ListTile(
+                              leading: Icon(Icons.edit_outlined, color: theme.colorScheme.primary, size: 22),
+                              title: Text(
+                                'Edit Contact Details',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant, size: 20),
+                              onTap: _editContact,
                             ),
                             Divider(height: 1, color: theme.dividerColor),
                             ListTile(
@@ -396,7 +441,10 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                                 final name = _contact!.name;
                                 await BlockController.instance.addRule(_contact!.phone);
                                 messenger.showSnackBar(
-                                  SnackBar(content: Text('$name added to blocklist')),
+                                  SnackBar(
+                                    content: Text('$name added to blocklist'),
+                                    backgroundColor: Colors.red,
+                                  ),
                                 );
                               },
                             ),
@@ -422,15 +470,15 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color,
               boxShadow: [
                 BoxShadow(
                   color: color.withValues(alpha: 0.3),
-                  blurRadius: 10,
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],

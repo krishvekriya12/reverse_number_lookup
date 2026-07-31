@@ -30,7 +30,9 @@ class ContactsController extends ChangeNotifier {
   }
 
   Future<void> loadContacts() async {
-    loadingNotifier.value = true;
+    if (_fullContactList.isEmpty) {
+      loadingNotifier.value = true;
+    }
     permissionDeniedNotifier.value = false;
 
     final status = await Permission.contacts.request();
